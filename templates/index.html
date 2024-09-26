@@ -1,25 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Шашлычный домик</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 10px;
+        }
+        h3 {
+            text-align: center;
+            color: #343a40;
+        }
+        #menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .menu-item {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            width: 200px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .menu-item span {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #495057;
+        }
+        .menu-item button {
+            background: #007bff;
+            border: none;
+            color: white;
+            padding: 10px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .menu-item button:hover {
+            background: #0056b3;
+        }
+        #cart {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: green;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
-    <h2>Меню</h2>
-    <div id="menu">
-        {% for item in menu_items %}
-        <div>
-            <span>{{ item.title }} - {{ item.price }} ₽</span>
-            <button>В корзину</button>
-        </div>
-        {% endfor %}
+<h3>Меню</h3>
+<div id="menu">
+    {% for item in menu_items %}
+    <div class="menu-item" data-id="{{ item.id }}" data-title="{{ item.title }}" data-price="{{ item.price }}">
+        <span>{{ item.title }} – {{ item.price }} ₽</span>
+        <button>В корзину</button>
     </div>
+    {% endfor %}
+</div>
+<div id="cart">Корзина (<span id="cart-count">0</span>)</div>
+<script>
+    const telegram = window.Telegram.WebApp;
+    telegram.expand();
+    const cart = [];
+    const cartCountElement = document.getElementById('cart-count');
 
-<!--    <script>-->
-<!--        Telegram.WebApp.ready();-->
-<!--    </script>-->
+    document.querySelectorAll('.menu-item button').forEach(button => {
+        button.addEventListener('click', event => {
+            const menuItem = event.target.closest('.menu-item');
+            const itemId = menuItem.getAttribute('data-id');
+            const itemTitle = menuItem.getAttribute('data-title');
+            const itemPrice = parseFloat(menuItem.getAttribute('data-price'));
+            const cartItem = {id: itemId, title:itemTitle, price:itemPrice};
+            cart.push(cartItem);
+            updateCartCount();
+        });
+    });
 
+    function updateCartCount() {
+        cartCountElement.textContent = cart.length;
+    }
+
+    document.getElementById('cart').addEventListener('click', () => {
+        telegram.MainButton.text = "Подвести итог";
+        telegram.MainButton.show();
+        telegram.MainButton.onClick(() => {
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const summary = cart.map(item => `${item.title} – ${item.price} руб.`).join("\n");
+            const result = `Ваш заказ:\n${summary}\n\nИтог: ${total} руб.`;
+            telegram.sendData(result);
+        });
+    });
+</script>
 </body>
 </html>
